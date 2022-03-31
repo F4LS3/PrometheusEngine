@@ -1,13 +1,12 @@
 package dev.f4ls3.prometheus.engine;
 
-import dev.f4ls3.prometheus.engine.listeners.JoystickListener;
+import dev.f4ls3.prometheus.engine.listeners.ControllerListener;
 import dev.f4ls3.prometheus.engine.listeners.KeyListener;
 import dev.f4ls3.prometheus.engine.listeners.MouseListener;
-import dev.f4ls3.prometheus.engine.utils.Settings;
+import dev.f4ls3.prometheus.engine.utils.Controller;
+import dev.f4ls3.prometheus.engine.utils.Time;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWJoystickCallback;
-import org.lwjgl.glfw.GLFWJoystickCallbackI;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
@@ -24,7 +23,9 @@ public class Window {
 
     private MouseListener mouseListener;
     private KeyListener keyListener;
-    private JoystickListener joystickListener;
+    private ControllerListener controllerListener;
+
+    private Controller controller = new Controller();
 
     public Window(final int width, final int height, final String title) {
         this.width = width;
@@ -33,7 +34,7 @@ public class Window {
 
         this.mouseListener = new MouseListener();
         this.keyListener = new KeyListener();
-        this.joystickListener = new JoystickListener();
+        this.controllerListener = new ControllerListener();
 
         GLFWErrorCallback.createPrint(System.err).set();
 
@@ -55,7 +56,8 @@ public class Window {
         glfwSetKeyCallback(this.windowHandle, this.keyListener::keyCallback);
 
         // Joystick Listener Callbacks
-        glfwSetJoystickCallback((jid, event) -> this.joystickListener.joystickConnectionCallback(jid, event));
+        glfwSetJoystickCallback((jid, event) -> this.controllerListener.joystickConnectionCallback(jid, event));
+        this.controllerListener.registerConnectedJoysticks();
 
         glfwMakeContextCurrent(this.windowHandle);
         glfwSwapInterval(1);
@@ -65,16 +67,23 @@ public class Window {
     }
 
     public void startGameLoop() {
+        float beginTime = Time.getTime();
+        float endTime;
+
         while(!GLFW.glfwWindowShouldClose(this.windowHandle)) {
             GLFW.glfwPollEvents();
 
-            // Updating Joystick
-            this.joystickListener.updateJoystickAxisStates();
+            // Updating Controller Inputs
+            this.controllerListener.updateGamepadInputs();
 
             glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
             glfwSwapBuffers(this.windowHandle);
+
+            endTime = Time.getTime();
+            float dt = endTime - beginTime;
+            beginTime = endTime;
         }
 
         glfwFreeCallbacks(this.windowHandle);
@@ -92,7 +101,7 @@ public class Window {
         return keyListener;
     }
 
-    public JoystickListener getJoystickListener() {
-        return joystickListener;
+    public ControllerListener getControllerListener() {
+        return controllerListener;
     }
 }
