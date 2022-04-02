@@ -3,10 +3,12 @@ package dev.f4ls3.prometheus.engine;
 import dev.f4ls3.prometheus.engine.listeners.ControllerListener;
 import dev.f4ls3.prometheus.engine.listeners.KeyListener;
 import dev.f4ls3.prometheus.engine.listeners.MouseListener;
-import dev.f4ls3.prometheus.engine.utils.Controller;
+import dev.f4ls3.prometheus.engine.scene.SceneManager;
 import dev.f4ls3.prometheus.engine.utils.Time;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
+
+import java.util.Objects;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
@@ -16,25 +18,27 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Window {
 
-    private int width, height;
-    private String title;
+    private static float r;
+    private static float g;
+    private static float b;
 
-    private long windowHandle;
+    private final long windowHandle;
 
-    private MouseListener mouseListener;
-    private KeyListener keyListener;
-    private ControllerListener controllerListener;
-
-    private Controller controller = new Controller();
+    private final ControllerListener controllerListener;
 
     public Window(final int width, final int height, final String title) {
-        this.width = width;
-        this.height = height;
-        this.title = title;
+        r = 1.0f;
+        g = 1.0f;
+        b = 1.0f;
 
-        this.mouseListener = new MouseListener();
-        this.keyListener = new KeyListener();
+        MouseListener mouseListener = new MouseListener();
+        KeyListener keyListener = new KeyListener();
         this.controllerListener = new ControllerListener();
+
+        // Set Global Engine Variables
+        Engine.setKeyListener(keyListener);
+        Engine.setMouseListener(mouseListener);
+        Engine.setControllerListener(this.controllerListener);
 
         GLFWErrorCallback.createPrint(System.err).set();
 
@@ -44,19 +48,19 @@ public class Window {
         glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
         glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
 
-        this.windowHandle = GLFW.glfwCreateWindow(this.width, this.height, this.title, NULL, NULL);
+        this.windowHandle = GLFW.glfwCreateWindow(width, height, title, NULL, NULL);
         if(this.windowHandle == NULL) throw new RuntimeException("Couldn't create GLFW window");
 
         // Mouse Listener Callbacks
-        glfwSetCursorPosCallback(this.windowHandle, this.mouseListener::mousePosCallback);
-        glfwSetMouseButtonCallback(this.windowHandle, this.mouseListener::mouseButtonCallback);
-        glfwSetScrollCallback(this.windowHandle, this.mouseListener::mouseScrollCallback);
+        glfwSetCursorPosCallback(this.windowHandle, mouseListener::mousePosCallback);
+        glfwSetMouseButtonCallback(this.windowHandle, mouseListener::mouseButtonCallback);
+        glfwSetScrollCallback(this.windowHandle, mouseListener::mouseScrollCallback);
 
         // Keyboard Listener Callback
-        glfwSetKeyCallback(this.windowHandle, this.keyListener::keyCallback);
+        glfwSetKeyCallback(this.windowHandle, keyListener::keyCallback);
 
         // Joystick Listener Callbacks
-        glfwSetJoystickCallback((jid, event) -> this.controllerListener.joystickConnectionCallback(jid, event));
+        glfwSetJoystickCallback(this.controllerListener::joystickConnectionCallback);
         this.controllerListener.registerConnectedJoysticks();
 
         glfwMakeContextCurrent(this.windowHandle);
@@ -64,11 +68,14 @@ public class Window {
         glfwShowWindow(this.windowHandle);
 
         createCapabilities();
+
+        Engine.init();
     }
 
     public void startGameLoop() {
         float beginTime = Time.getTime();
         float endTime;
+        float delta = -1.0f;
 
         while(!GLFW.glfwWindowShouldClose(this.windowHandle)) {
             GLFW.glfwPollEvents();
@@ -76,13 +83,15 @@ public class Window {
             // Updating Controller Inputs
             this.controllerListener.updateGamepadInputs();
 
-            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            glClearColor(r, g, b, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
+
+            if(delta >= 0) SceneManager.getCurrentScene().update(delta);
 
             glfwSwapBuffers(this.windowHandle);
 
             endTime = Time.getTime();
-            float dt = endTime - beginTime;
+            delta = endTime - beginTime;
             beginTime = endTime;
         }
 
@@ -90,18 +99,20 @@ public class Window {
         glfwDestroyWindow(this.windowHandle);
 
         glfwTerminate();
-        glfwSetErrorCallback(null).free();
+        Objects.requireNonNull(glfwSetErrorCallback(null)).free();
     }
 
-    public MouseListener getMouseListener() {
-        return mouseListener;
+    public static void setRGB(final float red, final float green, final float blue) {
+        r = red;
+        g = green;
+        b = blue;
     }
 
-    public KeyListener getKeyListener() {
-        return keyListener;
+    public static void setRGB(final float[] rgb) {
+        setRGB(rgb[0], rgb[1], rgb[2]);
     }
 
-    public ControllerListener getControllerListener() {
-        return controllerListener;
+    public static float[] getRGB() {
+        return new float[]{r, g, b};
     }
 }

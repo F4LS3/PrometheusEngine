@@ -7,8 +7,8 @@ public class Controller {
 
     private boolean controllerConnected;
 
-    private boolean[] controllerButtons;
-    private float[] controllerAxes;
+    private final boolean[] controllerButtons;
+    private final float[] controllerAxes;
 
     private String controllerName;
 

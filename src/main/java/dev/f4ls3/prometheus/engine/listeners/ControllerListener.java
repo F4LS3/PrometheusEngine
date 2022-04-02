@@ -5,13 +5,12 @@ import dev.f4ls3.prometheus.engine.utils.Controller;
 import org.lwjgl.glfw.GLFWGamepadState;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
 
 public class ControllerListener {
 
-    private List<Controller> controllers;
+    private final ArrayList<Controller> controllers;
 
     public ControllerListener() {
         this.controllers = new ArrayList(){
@@ -71,16 +70,20 @@ public class ControllerListener {
         }
     }
 
-    public boolean isButtonPressed(final int joystickID, final int button) {
-        Controller controller = this.controllers.get(joystickID);
-        if(controller == null) return false;
-        return controller.getControllerButtons()[button];
+    public boolean isButtonPressed(final int button) {
+        for (Controller controller : this.controllers) {
+            if (controller == null) return false;
+            return controller.getControllerButtons()[button];
+        }
+        return false;
     }
 
-    public float getAxisPosition(final int joystickID, final int axis) {
-        Controller controller = this.controllers.get(joystickID);
-        if(controller == null) return 0.0f;
-        return controller.getControllerAxes()[axis];
+    public float getAxisPosition(final int axis) {
+        for (Controller controller : this.controllers) {
+            if (controller == null) return 0.0f;
+            return controller.getControllerAxes()[axis];
+        }
+        return 0.0f;
     }
 
     public GLFWGamepadState getGamepadState(final int joystickID) {
@@ -89,5 +92,9 @@ public class ControllerListener {
         GLFWGamepadState state = GLFWGamepadState.create();
         glfwGetGamepadState(joystickID, state);
         return state;
+    }
+
+    public boolean isControllerConnected() {
+        return this.controllers.stream().anyMatch(Controller::isControllerConnected);
     }
 }
