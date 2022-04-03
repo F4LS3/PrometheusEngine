@@ -3,6 +3,7 @@ package dev.f4ls3.prometheus.engine;
 import dev.f4ls3.prometheus.engine.listeners.ControllerListener;
 import dev.f4ls3.prometheus.engine.listeners.KeyListener;
 import dev.f4ls3.prometheus.engine.listeners.MouseListener;
+import dev.f4ls3.prometheus.engine.renderer.Shader;
 import dev.f4ls3.prometheus.engine.scene.SceneManager;
 import dev.f4ls3.prometheus.engine.utils.Time;
 import org.lwjgl.glfw.GLFW;
